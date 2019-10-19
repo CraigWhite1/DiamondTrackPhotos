@@ -4,9 +4,8 @@
   "description": "This app will display image and video of stones",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1".
-	"start": "node app.js"
-	  
+    "test": "echo \"Error: no test specified\" && exit 1",
+	"start": "node app.js"	  
   },
   "author": "CW",
   "license": "ISC",
