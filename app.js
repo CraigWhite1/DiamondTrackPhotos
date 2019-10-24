@@ -1,5 +1,6 @@
 var express = require("express"),
 	app = express(),
+	urlExists = require('url-exists'),
 	bodyParser = require("body-parser");
 
 
