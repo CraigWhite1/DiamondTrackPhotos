@@ -14,7 +14,7 @@ app.get("/", function(req,res){
 
 
 //Show
-app.get("/stones/:id", function(req,res){
+app.get("/diamonds/:id", function(req,res){
 	res.render("show", {stone: req.params.id});
 });
 
