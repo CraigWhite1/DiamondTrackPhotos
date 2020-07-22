@@ -13,6 +13,10 @@
 	padding: 1px;
 }
 
+.display-2{
+	text-align: center;
+}
+
 /* .video{
    	object-fit: cover;
 	height: 200px;
@@ -21,3 +25,31 @@
 .col-md-6{
 	height: 200px;
 } */
+
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+    color: #777;
+}
+
+.social{
+	padding-top: 15px;
+    padding-right: 15px;
+    padding-bottom: 15px;
+    padding-left: 15px;
+}
+
+.social .fa-facebook:hover {
+    color: #4060A5;
+}
+
+.social .fa-twitter:hover {
+    color: #00ABE3;
+}
+
+.social .fa-google-plus:hover {
+    color: #e64522;
+}
+
+.social .fa-linkedin:hover {
+    color: #0094BC;
+}
