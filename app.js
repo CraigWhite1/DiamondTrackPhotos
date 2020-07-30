@@ -16,7 +16,7 @@ app.get("/", function(req,res){
 
 //Show
 app.get("/diamonds/:id", function(req,res){
-	res.render("show", {stone: req.params.id});
+	res.render("show", {words:{lotName:req.params.id}});
 });
 
 //Jewelry
