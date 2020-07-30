@@ -25,16 +25,23 @@ app.get("/jewelry/:id", function(req,res){
 	request('https://gemelody.blob.core.windows.net/img/data.json', function (error, response, body) {
 	if (!error && response.statusCode === 200) {
 	const words = JSON.parse(body);
+	var found = false;
 	// console.log(words);
 	for(i=0;i<words.length;++i)
  	{
- 		if(words[i].lotName==req.params.id){
- 		res.render("jewelry", {words:words[i]});
- 	}
-		else {
-			res.render("error",{words:[{color:'error'}]});
-		}
+ 		found = false;
+ 		if(words[i].lotName===req.params.id){
+ 		console.log(i);
+ 		found = true;	
+ 		break;
+ 		};
+ };	
+	if (found == true){
+		res.render("jewelry", {words:words[i]});
 	}
+	else {
+			res.render("error",{words:{lotName:'error'}});
+		}
 } else {
     console.log("Got an error: ", error, ", status code: ", response.statusCode);
   }
