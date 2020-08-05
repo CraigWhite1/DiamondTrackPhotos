@@ -30,7 +30,7 @@ app.get("/jewelry/:id", function(req,res){
 	for(i=0;i<words.length;++i)
  	{
  		found = false;
- 		if(words[i].lotName===req.params.id){
+ 		if(words[i].LotName===req.params.id){
  		console.log(i);
  		found = true;	
  		break;
@@ -40,7 +40,7 @@ app.get("/jewelry/:id", function(req,res){
 		res.render("jewelry", {words:words[i]});
 	}
 	else {
-			res.render("error",{words:{lotName:'error'}});
+			res.render("error",{words:{LotName:'error'}});
 		}
 } else {
     console.log("Got an error: ", error, ", status code: ", response.statusCode);

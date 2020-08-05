@@ -3,15 +3,15 @@
 <div class = "container">
 	<div class = "row">
 		<div class = "col-md-12" align="center">
-			<h1 class="display-2">Jewelry # <%=words.lotName%></h1>	
+			<h1 class="display-2">Jewelry # <%=words.LotName%></h1>	
 		</div>
 		<div class = "col-md-6">
 			<h1 class="display-2">Image</h1>
-			<img class = "img-responsive" src = "https://gemelody.blob.core.windows.net/img/<%=words.lotName%>.jpg" onerror="this.style.display='none'">
+			<img class = "img-responsive" src = "https://gemelody.blob.core.windows.net/img/<%=words.LotName%>.jpg" onerror="this.style.display='none'">
 		</div>
 		<div class = "col-md-6">
 			<h1 class="display-2">Video</h1>
-			<video width="100%" height="100%" class = "video-fluid" src="https://gemelody.blob.core.windows.net/img/<%=words.lotName%>.mp4" type="video/mp4" autoplay loop controls muted onerror="this.style.display='none'">
+			<video width="100%" height="100%" class = "video-fluid" src="https://gemelody.blob.core.windows.net/img/<%=words.LotName%>.mp4" type="video/mp4" autoplay loop controls muted onerror="this.style.display='none'">
 			</video>
 		</div>	
 		
@@ -19,8 +19,8 @@
 			<div clas = "border border-secondary">
 				<h1 class="display-2">Details</h1>
 				<p>
-				Price <%=words.price%> <br>
-				Color <%=words.color%>
+				Price <%=words.Sale1%> <br>
+				Summary <%=words.Remark%>
 				</p>
 			</div>
 		
@@ -29,11 +29,11 @@
 		<div class = "col-md-12" align="center">
 			<h1 class="display-2">Certificate</h1>
 			<div class="embed-responsive" style="padding-bottom: 100%;">
-    			<!-- <object class="embed-responsive-item" data="http://gemelody.com/data/certs/<%=words.lotName%>.pdf" type="application/pdf" internalinstanceid="9" title="" onerror="this.style.display='none'">
+    			<!-- <object class="embed-responsive-item" data="http://gemelody.com/data/certs/<%=words.LotName%>.pdf" type="application/pdf" internalinstanceid="9" title="" onerror="this.style.display='none'">
         			<p>Your browser isn't supporting embedded pdf files. You can download the file
             			<a href="http://gemelody.com/data/certs<%=words.lotName%>.pdf">here</a>.</p>
    				</object> -->
-				<iframe src = "https://docs.google.com/viewer?url=https://gemelody.blob.core.windows.net/certslotname/<%=words.lotName%>.PDF&embedded=true" onerror="this.style.display='none'">
+				<iframe src = "https://docs.google.com/viewer?url=https://gemelody.blob.core.windows.net/certslotname/<%=words.LotName%>.PDF&embedded=true" onerror="this.style.display='none'">
 				</iframe>
 			</div>
 		</div>

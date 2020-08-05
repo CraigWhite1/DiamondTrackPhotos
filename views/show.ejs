@@ -14,14 +14,10 @@
 			<video width="100%" height="100%" class = "video-fluid" src="https://gemelody.blob.core.windows.net/img/<%=words.lotName%>.mp4" type="video/mp4" autoplay loop controls muted onerror="this.style.display='none'">
 			</video>
 		</div>	
-		<div class = "col-md-12" align="center">
-			<h1 class="display-2">Certificate</h1>
+		<div class = "col-md-12" align="center" id ="cert">
+			<h1 class="display-2" >Certificate</h1>
 			<div class="embed-responsive" style="padding-bottom: 100%;">
-    			<!-- <object class="embed-responsive-item" data="http://gemelody.com/data/certs/<%=words.lotName%>.pdf" type="application/pdf" internalinstanceid="9" title="" onerror="this.style.display='none'">
-        			<p>Your browser isn't supporting embedded pdf files. You can download the file
-            			<a href="http://gemelody.com/data/certs/<%=words.lotName%>.pdf">here</a>.</p>
-   				</object> -->
-				<iframe src = "https://docs.google.com/viewer?url=https://gemelody.blob.core.windows.net/certslotname/<%=words.lotName%>.PDF&embedded=true" onerror="this.style.display='none'">
+				<iframe src = "https://docs.google.com/viewer?url=https://gemelody.blob.core.windows.net/certslotname/<%=words.lotName%>.PDF&embedded=true" onerror="cert.display='none'">
 				</iframe>
 			</div>
 		</div>
