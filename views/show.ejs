@@ -16,16 +16,29 @@
 		</div>	
 		<div class = "col-md-12" align="center" id ="cert">
 			<h1 class="display-2" >Certificate</h1>
-			<div class="embed-responsive" style="padding-bottom: 100%;">
-				<iframe src = "https://docs.google.com/viewer?url=https://gemelody.blob.core.windows.net/certslotname/<%=words.lotName%>.PDF&embedded=true" onerror="cert.display='none'">
+			<div class="embed-responsive" style="padding-bottom: 100%;">  
+        		<iframe id="myframe" src = "https://gemelody.blob.core.windows.net/certslotname/<%=words.lotName%>.PDF" onerror = "this.style.display = 'none';" >
 				</iframe>
 			</div>
 		</div>
 	</div>
 </div>
+<script>
+var proxyUrl = 'https://cors-anywhere.herokuapp.com/',
+    targetUrl = 'https://gemelody.blob.core.windows.net/certslotname/<%=words.lotName%>.PDF'
 
+var myRequest = new Request(proxyUrl + targetUrl);
 
-
+fetch(myRequest).then(function(response) {
+  console.log(response.status);
+  if (response.status == 404){
+  document.getElementById("myframe").style.display = 'none';
+  }
+}).catch(function(error) {
+  console.log(error)
+  
+});
+</script>
 
 
 <% include partials/footer %>
