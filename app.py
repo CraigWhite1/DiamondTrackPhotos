@@ -12,14 +12,14 @@ app = Flask(__name__)
 # Remember to set the environmental variables before running this example
 # REPORT_CHECK_API_KEY = config.token
 # REPORT_CHECK_API_ENDPOINT = config.link
-print(os.getenv('token'))
+# print(os.getenv('token'))
 
 REPORT_CHECK_API_KEY = os.getenv('token')
 REPORT_CHECK_API_ENDPOINT = os.getenv('link')
 
-if not REPORT_CHECK_API_KEY or not REPORT_CHECK_API_ENDPOINT:
-    print("You must set the REPORT_CHECK_API_KEY and REPORT_CHECK_API_ENDPOINT environmental variables.")
-    sys.exit(1)
+# if not REPORT_CHECK_API_KEY or not REPORT_CHECK_API_ENDPOINT:
+#     print("You must set the REPORT_CHECK_API_KEY and REPORT_CHECK_API_ENDPOINT environmental variables.")
+#     sys.exit(1)
 
 # Read the graphql file
 with open('report_check_query.graphql', 'r') as query_file:
