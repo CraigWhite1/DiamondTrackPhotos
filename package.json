@@ -1,0 +1,19 @@
+{
+  "name": "diamondtrack",
+  "version": "1.0.0",
+  "description": "This app will display image and video of stones",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "author": "CW",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "ejs": "^2.7.1",
+    "express": "^4.17.1",
+    "request": "^2.88.2",
+    "url-exists": "^1.0.3"
+  }
+}
