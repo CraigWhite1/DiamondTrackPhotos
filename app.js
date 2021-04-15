@@ -20,33 +20,38 @@ app.get("/diamonds/:id", function(req,res){
 });
 
 //Jewelry
-app.get("/jewelry/:id", function(req,res){
-	var i;
-	request('https://gemelody.blob.core.windows.net/img/data.json', function (error, response, body) {
-	if (!error && response.statusCode === 200) {
-	const words = JSON.parse(body);
-	var found = false;
-	// console.log(words);
-	for(i=0;i<words.length;++i)
- 	{
- 		found = false;
- 		if(words[i].LotName===req.params.id){
- 		console.log(i);
- 		found = true;	
- 		break;
- 		};
- };	
-	if (found == true){
-		res.render("jewelry", {words:words[i]});
-	}
-	else {
-			res.render("error",{words:{LotName:'error'}});
-		}
-} else {
-    console.log("Got an error: ", error, ", status code: ", response.statusCode);
-  }
+// Commenting out this one until we need to add back in the details of the pieces. For now we just want pic and video
+// app.get("/jewelry/:id", function(req,res){
+// 	var i;
+// 	request('https://gemelody.blob.core.windows.net/img/data.json', function (error, response, body) {
+// 	if (!error && response.statusCode === 200) {
+// 	const words = JSON.parse(body);
+// 	var found = false;
+// 	// console.log(words);
+// 	for(i=0;i<words.length;++i)
+//  	{
+//  		found = false;
+//  		if(words[i].LotName===req.params.id){
+//  		console.log(i);
+//  		found = true;	
+//  		break;
+//  		};
+//  };	
+// 	if (found == true){
+// 		res.render("jewelry", {words:words[i]});
+// 	}
+// 	else {
+// 			res.render("error",{words:{lotName:'error'}});
+// 		}
+// } else {
+//     console.log("Got an error: ", error, ", status code: ", response.statusCode);
+//   }
 
-})
+// })
+// });
+
+app.get("/jewelry/:id", function(req,res){
+	res.render("jewelry", {words:{lotName:req.params.id}});
 });
 
 app.listen(process.env.PORT || 3000, function() { 
