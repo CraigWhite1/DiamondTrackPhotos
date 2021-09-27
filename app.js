@@ -23,7 +23,8 @@ app.get("/diamonds/:id", function(req,res){
 app.get("/jewelry/:id", function(req,res){
 	var i;
 	request('https://gemelody.blob.core.windows.net/img/data.json', function (error, response, body) {
-	if (!error && response.statusCode === 200) {
+	// Commenting out the error catch, not working for some reason
+	// if (!error && response.statusCode === 200) {
 	const words = JSON.parse(body);
 	var found = false;
 	// console.log(words);
@@ -44,9 +45,9 @@ app.get("/jewelry/:id", function(req,res){
 			// res.render("error",{words:{lotName:'error'}});
 			res.render("jewelry", {words:{lotName:req.params.id}});
 		}
-} else {
-    console.log("Got an error: ", error, ", status code: ", response.statusCode);
-  }
+// } else {
+//     console.log("Got an error: ", error, ", status code: ", response.statusCode);
+//   }
 
 })
 });
