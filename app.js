@@ -36,7 +36,23 @@ app.get("/jewelry/:id", function(req,res){
 	 		};
 	 	};	
 		if (found == true){
-			res.render("jewelry", {words:words[i]});
+			//Check to see if cert exists
+			console.log(words[i].Certno)
+			if(words[i].Certno.length > 0){
+				console.log("Cert exists")
+				request('https://gemelody.blob.core.windows.net/img/'+words[i].Certno+'.pdf', function (error,response, body) {
+					 if(response.statusCode==404){
+					 	console.log("Cert exists but not on blob")
+					 	words[i]['Certno'] = "NoCert"
+					 	res.render("jewelry", {words:words[i]});
+					 }
+					 res.render("jewelry", {words:words[i]});
+				});	
+			}else{
+				console.log("Cert does Not exist")
+				words[i]['Certno'] = "NoCert"
+				res.render("jewelry", {words:words[i]});
+			}
 		}
 		else {
 				// Taking out the error page for now
