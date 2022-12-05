@@ -1,0 +1,13 @@
+<% include partials/header %>
+
+<table>
+<% for(var i=0; i < details.length; i++) { %>
+   <tr>
+     <td><%= details[i].LotName %></td>
+     <td><%= details[i].Cert %></td>
+   </tr>
+<% } %>
+</table>
+
+
+<% include partials/footer %>
