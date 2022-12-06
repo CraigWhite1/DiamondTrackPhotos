@@ -52,5 +52,5 @@ jobs:
         with:
           app-name: 'PhotosApp'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0D771CEEE9444D1EA6BA9C7B98CC8C37 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7026AC0F51434F0981F0709D4FC82FAC }}
           package: .
