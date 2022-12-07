@@ -6,18 +6,18 @@ var express = require("express"),
 	sql = require("mssql");
 
 // Create a configuration object for our Azure SQL connection parameters
-var dbConfig = {
- server: "gemelodyphotosapp.database.windows.net", // Use your SQL server name
- database: "photos", // Database to connect to
- user: "bluenilelogin", // Use your username
- password: "Danielle9", // Use your password
- port: 1433,
- // Since we're on Windows Azure, we need to set the following options
- options: {
-       encrypt: true,
-       enableArithAbort: true
-   }
-};
+// var dbConfig = {
+//  server: "gemelodyphotosapp.database.windows.net", // Use your SQL server name
+//  database: "photos", // Database to connect to
+//  user: "bluenilelogin", // Use your username
+//  password: "Danielle9", // Use your password
+//  port: 1433,
+//  // Since we're on Windows Azure, we need to set the following options
+//  options: {
+//        encrypt: true,
+//        enableArithAbort: true
+//    }
+// };
 
 // // This function connects to a SQL server, executes a SELECT statement,
 // // and displays the results in the console.
