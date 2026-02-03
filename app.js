@@ -55,9 +55,11 @@ const config = {
 };
 
 function getPort() {
+  // iisnode sets PORT to a named pipe (e.g., \\.\pipe\xxx); use it directly.
+  if (process.env.PORT) return process.env.PORT;
+
   const isAzure = !!process.env.WEBSITE_SITE_NAME;
   const raw =
-    process.env.PORT ||
     process.env.WEBSITE_PORT ||
     process.env.HTTP_PLATFORM_PORT ||
     "";
