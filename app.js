@@ -8,6 +8,12 @@ const sql = require("mssql");
 
 const app = express();
 
+// Log incoming requests to help diagnose Azure 500s.
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 const config = {
   port: getPort(),
   fastApi: {
@@ -101,8 +107,23 @@ app.get("/jewelry/:id", async function (req, res) {
   }
 });
 
+// Generic error handler to ensure stack traces hit the logs.
+app.use(function (err, req, res, next) {
+  console.error("Express error handler", err && err.stack ? err.stack : err);
+  res.status(500).send("Internal Server Error");
+});
+
 app.listen(config.port, function () {
   console.log(`Server listening on port ${config.port}`);
+});
+
+// Catch unhandled promise rejections and exceptions so they surface in logs.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception", error);
 });
 
 function buildMediaUrls(lot) {
