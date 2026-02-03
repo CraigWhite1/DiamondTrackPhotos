@@ -56,22 +56,19 @@ const config = {
 
 function getPort() {
   // iisnode sets PORT to a named pipe (e.g., \\.\pipe\xxx); use it directly.
-  if (process.env.PORT) return process.env.PORT;
+  const port = process.env.PORT || process.env.WEBSITE_PORT || process.env.HTTP_PLATFORM_PORT;
+  
+  console.log(`Port selection: PORT=${process.env.PORT}, WEBSITE_PORT=${process.env.WEBSITE_PORT}, HTTP_PLATFORM_PORT=${process.env.HTTP_PLATFORM_PORT}`);
+  
+  if (port) {
+    console.log(`Using port: ${port}`);
+    return port;
+  }
 
-  const isAzure = !!process.env.WEBSITE_SITE_NAME;
-  const raw =
-    process.env.WEBSITE_PORT ||
-    process.env.HTTP_PLATFORM_PORT ||
-    "";
-
-  const parsed = parseInt(raw, 10);
-  if (Number.isFinite(parsed) && parsed > 0 && parsed < 65536) return parsed;
-
-  // In Azure, avoid hard-coding 3000 to reduce port conflicts; fall back to 8080.
-  if (isAzure) return 8080;
-
-  // Local dev default.
-  return 3000;
+  // Fallback for local dev.
+  const fallback = process.env.WEBSITE_SITE_NAME ? 8080 : 3000;
+  console.log(`No port env var found, using fallback: ${fallback}`);
+  return fallback;
 }
 
 const mockCerts = loadMockCerts();
