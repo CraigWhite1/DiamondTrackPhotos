@@ -49,9 +49,21 @@ const config = {
 };
 
 function getPort() {
-  const raw = process.env.PORT || process.env.WEBSITE_PORT || "3000";
+  const isAzure = !!process.env.WEBSITE_SITE_NAME;
+  const raw =
+    process.env.PORT ||
+    process.env.WEBSITE_PORT ||
+    process.env.HTTP_PLATFORM_PORT ||
+    "";
+
   const parsed = parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed > 0 && parsed < 65536 ? parsed : 3000;
+  if (Number.isFinite(parsed) && parsed > 0 && parsed < 65536) return parsed;
+
+  // In Azure, avoid hard-coding 3000 to reduce port conflicts; fall back to 8080.
+  if (isAzure) return 8080;
+
+  // Local dev default.
+  return 3000;
 }
 
 const mockCerts = loadMockCerts();
