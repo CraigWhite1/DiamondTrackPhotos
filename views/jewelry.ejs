@@ -17,15 +17,15 @@
 		
 		<div class = "col-md-12" align="center">
 			<h1 class="display-2">Certificate</h1>
-			<div class="embed-responsive" style="padding-bottom: 100%;">
-				<% if (cert && cert.certUrl) { %>
+			<% if (cert && cert.source && cert.source !== 'blob-fallback') { %>
+				<div class="embed-responsive" style="padding-bottom: 100%;">
 					<iframe src="<%= cert.certUrl %>" onerror="this.style.display='none'"></iframe>
-				<% } else { %>
-					<p>Certificate is unavailable right now.</p>
-				<% } %>
-			</div>
-			<p>Cert #: <%= cert && cert.certNumber ? cert.certNumber : 'N/A' %></p>
-			<p>Lab: <%= cert && cert.lab ? cert.lab : 'N/A' %> (source: <%= cert && cert.source ? cert.source : 'unknown' %>)</p>
+				</div>
+				<p>Cert #: <%= cert.certNumber %></p>
+				<p>Lab: <%= cert.lab %></p>
+			<% } else { %>
+				<p>Certificate is unavailable for this item.</p>
+			<% } %>
 		</div>
 
 		<% if (details && details.length) { %>
