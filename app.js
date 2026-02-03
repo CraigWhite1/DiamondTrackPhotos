@@ -9,7 +9,7 @@ const sql = require("mssql");
 const app = express();
 
 const config = {
-  port: parseInt(process.env.PORT || "3000", 10),
+  port: getPort(),
   fastApi: {
     baseUrl: process.env.FASTAPI_BASE_URL || "",
     authHeader: process.env.FASTAPI_AUTH_HEADER || "x-api-key",
@@ -47,6 +47,12 @@ const config = {
     port: parseInt(process.env.SQL_PORT || "1433", 10),
   },
 };
+
+function getPort() {
+  const raw = process.env.PORT || process.env.WEBSITE_PORT || "3000";
+  const parsed = parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 && parsed < 65536 ? parsed : 3000;
+}
 
 const mockCerts = loadMockCerts();
 
