@@ -7,33 +7,33 @@
 		</div>
 		<div class = "col-md-6">
 			<h1 class="display-2">Image</h1>
-			<img class = "img-responsive" src = "https://gemelody.blob.core.windows.net/img/<%=lot%>.jpg" onerror="this.style.display='none'">
+			<img class = "img-responsive" src = "<%= media.imageUrl %>" onerror="this.style.display='none'">
 		</div>
 		<div class = "col-md-6">
 			<h1 class="display-2">Video</h1>
-			<video width="100%" height="100%" class = "video-fluid" src="https://gemelody.blob.core.windows.net/img/<%=lot%>.mp4" type="video/mp4" autoplay loop controls muted onerror="this.style.display='none'">
+			<video width="100%" height="100%" class = "video-fluid" src="<%= media.videoUrl %>" type="video/mp4" autoplay loop controls muted onerror="this.style.display='none'">
 			</video>
 		</div>	
-<!-- 		<div class = "col-md-12" align="center" outline= "1px solid orange">
-			<div clas = "border border-secondary">
-				<h1 class="display-2">Details</h1>
-				<p>
-				Price <br>
-				Summary 
-				</p>
-			</div>
-		
-		</div> -->
 		
 		<div class = "col-md-12" align="center">
 			<h1 class="display-2">Certificate</h1>
-			<% for(var i=0; i < details.length; i++) { %>
-   				<div class="embed-responsive" style="padding-bottom: 100%;">
-					<iframe onload="frameload()" src = "https://gemelody.blob.core.windows.net/img/<%= details[i].Cert %>.pdf" onerror="this.style.display='none'">
-					</iframe>
-				</div>
-			<% } %>
+			<div class="embed-responsive" style="padding-bottom: 100%;">
+				<% if (cert && cert.certUrl) { %>
+					<iframe src="<%= cert.certUrl %>" onerror="this.style.display='none'"></iframe>
+				<% } else { %>
+					<p>Certificate is unavailable right now.</p>
+				<% } %>
+			</div>
+			<p>Cert #: <%= cert && cert.certNumber ? cert.certNumber : 'N/A' %></p>
+			<p>Lab: <%= cert && cert.lab ? cert.lab : 'N/A' %> (source: <%= cert && cert.source ? cert.source : 'unknown' %>)</p>
 		</div>
+
+		<% if (details && details.length) { %>
+		<div class = "col-md-12" align="center">
+			<h2>Additional Details (SQL fallback)</h2>
+			<pre><%= JSON.stringify(details, null, 2) %></pre>
+		</div>
+		<% } %>
 	</div>
 </div>
 

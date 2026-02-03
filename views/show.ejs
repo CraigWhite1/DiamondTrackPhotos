@@ -7,38 +7,28 @@
 		</div>
 		<div class = "col-md-6">
 			<h1 class="display-2">Image</h1>
-			<img class = "img-responsive" src = "https://gemelody.blob.core.windows.net/img/<%=lot%>.jpg" onerror="this.style.display='none'">
+			<img class = "img-responsive" src = "<%= media.imageUrl %>" onerror="this.style.display='none'">
 		</div>
 		<div class = "col-md-6">
 			<h1 class="display-2">Video</h1>
-			<video width="100%" height="100%" class = "video-fluid" src="https://gemelody.blob.core.windows.net/img/<%=lot%>.mp4" type="video/mp4" autoplay loop controls muted onerror="this.style.display='none'">
+			<video width="100%" height="100%" class = "video-fluid" src="<%= media.videoUrl %>" type="video/mp4" autoplay loop controls muted onerror="this.style.display='none'">
 			</video>
 		</div>	
 		<div class = "col-md-12" align="center" id ="cert">
 			<h1 class="display-2" >Certificate</h1>
 			<div class="embed-responsive" style="padding-bottom: 100%;">  
-        		<iframe id="myframe" src = "https://gemelody.blob.core.windows.net/certslotname/<%=lot%>.PDF" onerror = "this.style.display = 'none';" >
-				</iframe>
+        		<% if (cert && cert.certUrl) { %>
+					<iframe id="myframe" src = "<%= cert.certUrl %>" onerror = "this.style.display = 'none';" >
+					</iframe>
+				<% } else { %>
+					<p>Certificate is unavailable right now.</p>
+				<% } %>
 			</div>
+			<p>Cert #: <%= cert && cert.certNumber ? cert.certNumber : 'N/A' %></p>
+			<p>Lab: <%= cert && cert.lab ? cert.lab : 'N/A' %> (source: <%= cert && cert.source ? cert.source : 'unknown' %>)</p>
 		</div>
 	</div>
 </div>
-<script>
-var proxyUrl = 'https://cors-anywhere.herokuapp.com/',
-    targetUrl = 'https://gemelody.blob.core.windows.net/certslotname/<%=lot%>.PDF'
-
-var myRequest = new Request(proxyUrl + targetUrl);
-
-fetch(myRequest).then(function(response) {
-  console.log(response.status);
-  if (response.status == 404){
-  document.getElementById("myframe").style.display = 'none';
-  }
-}).catch(function(error) {
-  console.log(error)
-  
-});
-</script>
 
 
 <%- include ('partials/footer') %>

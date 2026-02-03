@@ -1,63 +1,281 @@
-var express = require("express"),
-	app = express(),
-	sql = require("mssql");
+require("dotenv").config();
 
-// Create a configuration object for our Azure SQL connection parameters
-var dbConfig = {
- server: "gemelodyphotosapp.database.windows.net", // Use your SQL server name
- database: "photos", // Database to connect to
- user: "bluenilelogin", // Use your username
- password: "Danielle9", // Use your password
- port: 1433,
- // Since we're on Windows Azure, we need to set the following options
- options: {
-       encrypt: true,
-       enableArithAbort: true
-   }
+const path = require("path");
+const fs = require("fs");
+const express = require("express");
+const axios = require("axios");
+const sql = require("mssql");
+
+const app = express();
+
+const config = {
+  port: parseInt(process.env.PORT || "3000", 10),
+  fastApi: {
+    baseUrl: process.env.FASTAPI_BASE_URL || "",
+    authHeader: process.env.FASTAPI_AUTH_HEADER || "x-api-key",
+    authValue:
+      process.env.FASTAPI_AUTH_VALUE || process.env.FASTAPI_API_KEY || "",
+    timeoutMs: parseInt(process.env.FASTAPI_TIMEOUT_MS || "5000", 10),
+    jewelryPath: process.env.FASTAPI_JEWELRY_PATH || "/jewelry",
+    diamondsPath: process.env.FASTAPI_DIAMONDS_PATH || "/colorDiamonds",
+  },
+  gia: {
+    baseUrl: process.env.GIA_BASE_URL || "https://api.reportresults.gia.edu/",
+    authHeader: process.env.GIA_AUTH_HEADER || "Authorization",
+    authValue:
+      process.env.GIA_AUTH_VALUE || process.env.GIA_API_KEY || "",
+    timeoutMs: parseInt(process.env.GIA_TIMEOUT_MS || "5000", 10),
+  },
+  blob: {
+    baseUrl:
+      process.env.BLOB_BASE_URL || "https://gemelody.blob.core.windows.net",
+    mediaContainer: process.env.BLOB_MEDIA_CONTAINER || "img",
+    certContainer: process.env.BLOB_CERT_CONTAINER || "certslotname",
+  },
+  mocks: {
+    enabled: process.env.USE_MOCKS === "true",
+    path:
+      process.env.MOCK_CERT_PATH ||
+      path.join(__dirname, "mocks", "certs.sample.json"),
+  },
+  sql: {
+    enabled: process.env.USE_SQL_FALLBACK === "true",
+    server: process.env.SQL_SERVER,
+    database: process.env.SQL_DATABASE,
+    user: process.env.SQL_USER,
+    password: process.env.SQL_PASSWORD,
+    port: parseInt(process.env.SQL_PORT || "1433", 10),
+  },
 };
 
+const mockCerts = loadMockCerts();
 
-app.use(express.static(__dirname + "/public"));
+app.use(express.static(path.join(__dirname, "public")));
 app.set("view engine", "ejs");
-app.get("/", function(req,res){
-	res.render("landing");
+
+app.get("/", function (req, res) {
+  res.render("landing");
 });
 
-
-
-
-//Show
-app.get("/diamonds/:id", function(req,res){
-	res.render("show", {lot:req.params.id});
+app.get("/diamonds/:id", async function (req, res) {
+  const lot = req.params.id;
+  try {
+    const media = buildMediaUrls(lot);
+    const cert = await getCertInfo(lot, "diamonds");
+    res.render("show", { lot, media, cert });
+  } catch (error) {
+    console.error("/diamonds handler error", error.message);
+    res.render("error", { words: { LotName: "error" } });
+  }
 });
 
-//Jewelry
-app.get("/jewelry/:id", function(req,res){
-	var conn = new sql.ConnectionPool(dbConfig);
-	conn.connect(function (err) {
-	if (err)
-	console.log(err);
+app.get("/jewelry/:id", async function (req, res) {
+  const lot = req.params.id;
+  try {
+    const media = buildMediaUrls(lot);
+    const cert = await getCertInfo(lot, "jewelry");
+    const details = await fetchSqlDetails(lot);
 
-	var request = new sql.Request(conn);
-
-	request.query("SELECT * FROM Certs where LotName = '"+req.params.id+"';", function (err, result) {
-
-	if (err) {
-		console.log(err)
-		res.render("error",{words:{LotName:'error'}});
-	}
-	// var rowsCount = result.rowsAffected;
-	sql.close();
-	res.render('jewelry', {
-		details: result.recordset,
-		lot: req.params.id
-	});
-
-	}); // request.query
-	}); // sql.connvar i;
+    res.render("jewelry", { lot, media, cert, details });
+  } catch (error) {
+    console.error("/jewelry handler error", error.message);
+    res.render("error", { words: { LotName: "error" } });
+  }
 });
 
-
-app.listen(process.env.PORT || 3000, function() { 
-  console.log('Server listening on port 3000'); 
+app.listen(config.port, function () {
+  console.log(`Server listening on port ${config.port}`);
 });
+
+function buildMediaUrls(lot) {
+  const base = config.blob.baseUrl.replace(/\/$/, "");
+  const media = config.blob.mediaContainer.replace(/\/$/, "");
+  return {
+    imageUrl: `${base}/${media}/${lot}.jpg`,
+    videoUrl: `${base}/${media}/${lot}.mp4`,
+  };
+}
+
+function buildBlobCertUrl(lot) {
+  const base = config.blob.baseUrl.replace(/\/$/, "");
+  const container = config.blob.certContainer.replace(/\/$/, "");
+  return `${base}/${container}/${lot}.PDF`;
+}
+
+function normalizeLab(lab) {
+  return (lab || "").trim().toUpperCase();
+}
+
+function loadMockCerts() {
+  if (!config.mocks.enabled) return [];
+  try {
+    const raw = fs.readFileSync(config.mocks.path, "utf8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn("Mock cert load failed", error.message);
+    return [];
+  }
+}
+
+function getFastApiHeaders() {
+  const headers = {};
+  if (config.fastApi.authHeader && config.fastApi.authValue) {
+    headers[config.fastApi.authHeader] = config.fastApi.authValue;
+  }
+  return headers;
+}
+
+function getGiaHeaders() {
+  const headers = {};
+  if (config.gia.authHeader && config.gia.authValue) {
+    headers[config.gia.authHeader] = config.gia.authValue;
+  }
+  return headers;
+}
+
+async function fetchFromFastApi(lot, kind) {
+  if (!config.fastApi.baseUrl) return null;
+  const base = config.fastApi.baseUrl.replace(/\/$/, "");
+  const pathPart =
+    kind === "jewelry"
+      ? config.fastApi.jewelryPath
+      : config.fastApi.diamondsPath;
+  const normalizedPath = pathPart.startsWith("/") ? pathPart : `/${pathPart}`;
+  const url = `${base}${normalizedPath}`;
+
+  const payload = {
+    page: 1,
+    limit: 1,
+    filters: {
+      search: lot,
+    },
+    sortBy: "Sale1",
+    sortOrder: "desc",
+  };
+
+  try {
+    const response = await axios.post(url, payload, {
+      headers: getFastApiHeaders(),
+      timeout: config.fastApi.timeoutMs,
+    });
+    return response.data;
+  } catch (error) {
+    console.warn(`FastAPI fetch failed for ${kind}`, error.message);
+    return null;
+  }
+}
+
+async function fetchFromGia(certNumber) {
+  if (!config.gia.baseUrl || !certNumber) return null;
+  const url = config.gia.baseUrl.replace(/\/$/, "");
+  const payload = {
+    query: `\n  query GetReportLink($reportNumber: String!) {\n    getReport(report_number: $reportNumber) {\n      links {\n        pdf\n      }\n    }\n  }\n`,
+    variables: { reportNumber: certNumber },
+  };
+  try {
+    const response = await axios.post(url, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getGiaHeaders(),
+      },
+      timeout: config.gia.timeoutMs,
+    });
+    const pdfUrl =
+      response.data &&
+      response.data.data &&
+      response.data.data.getReport &&
+      response.data.data.getReport.links
+        ? response.data.data.getReport.links.pdf
+        : null;
+    if (!pdfUrl) return null;
+    return { certNumber, certUrl: pdfUrl };
+  } catch (error) {
+    console.warn("GIA fetch failed", error.message);
+    return null;
+  }
+}
+
+async function getCertInfo(lot, kind) {
+  if (config.mocks.enabled && mockCerts.length) {
+    const mockMatch = mockCerts.find(
+      (item) => item.lotName && item.lotName.toUpperCase() === lot.toUpperCase()
+    );
+    if (mockMatch) {
+      return {
+        certNumber: mockMatch.certNumber || lot,
+        lab: mockMatch.lab || "MOCK",
+        certUrl: mockMatch.certUrl || buildBlobCertUrl(lot),
+        source: "mock",
+      };
+    }
+  }
+
+  const fastApiEnvelope = await fetchFromFastApi(lot, kind);
+  const first = fastApiEnvelope && Array.isArray(fastApiEnvelope.results)
+    ? fastApiEnvelope.results[0]
+    : null;
+  const fastApiLab = normalizeLab(first ? first.Lab : "");
+  const fastApiCertNumber = first ? first.CertificateNo : "";
+  const fastApiCertUrl = first && first.CertificateUrl ? first.CertificateUrl : "";
+
+  if (fastApiLab === "GIA") {
+    const giaData = await fetchFromGia(fastApiCertNumber || lot);
+    if (giaData) {
+      return {
+        certNumber: giaData.certNumber || fastApiCertNumber || lot,
+        lab: "GIA",
+        certUrl: giaData.certUrl || fastApiCertUrl || buildBlobCertUrl(lot),
+        source: "gia",
+      };
+    }
+  }
+
+  if (first) {
+    return {
+      certNumber: fastApiCertNumber || lot,
+      lab: fastApiLab || first.Lab || "",
+      certUrl: fastApiCertUrl || buildBlobCertUrl(lot),
+      source: "fastapi",
+    };
+  }
+
+  return {
+    certNumber: lot,
+    lab: "",
+    certUrl: buildBlobCertUrl(lot),
+    source: "blob-fallback",
+  };
+}
+
+async function fetchSqlDetails(lot) {
+  if (!config.sql.enabled) return [];
+  const dbConfig = {
+    server: config.sql.server,
+    database: config.sql.database,
+    user: config.sql.user,
+    password: config.sql.password,
+    port: config.sql.port,
+    options: {
+      encrypt: true,
+      enableArithAbort: true,
+    },
+  };
+
+  if (!dbConfig.server || !dbConfig.database || !dbConfig.user || !dbConfig.password) {
+    console.warn("SQL fallback skipped: missing credentials");
+    return [];
+  }
+
+  try {
+    const pool = await sql.connect(dbConfig);
+    const request = pool.request();
+    request.input("lot", sql.VarChar, lot);
+    const result = await request.query("SELECT * FROM Certs WHERE LotName = @lot;");
+    await pool.close();
+    return result.recordset || [];
+  } catch (error) {
+    console.warn("SQL fallback failed", error.message);
+    return [];
+  }
+}

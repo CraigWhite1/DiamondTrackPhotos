@@ -1,0 +1,20 @@
+[
+  {
+    "lotName": "JEI1614",
+    "certNumber": "GIA-123456",
+    "lab": "GIA",
+    "certUrl": "https://example.test/gia/JEI1614.pdf"
+  },
+  {
+    "lotName": "JEI1659",
+    "certNumber": "AGS-789012",
+    "lab": "AGS",
+    "certUrl": "https://example.test/ags/JEI1659.pdf"
+  },
+  {
+    "lotName": "P0C2753G",
+    "certNumber": "GIA-555555",
+    "lab": "GIA",
+    "certUrl": "https://example.test/gia/P0C2753G.pdf"
+  }
+]
