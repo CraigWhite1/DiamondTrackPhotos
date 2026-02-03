@@ -84,7 +84,10 @@ app.get("/diamonds/:id", async function (req, res) {
   const lot = req.params.id;
   try {
     const media = buildMediaUrls(lot);
-    const cert = await getCertInfo(lot, "diamonds");
+    // Only fetch cert if lot name looks valid (min 3 chars, alphanumeric + hyphens/underscores)
+    const cert = isValidLotName(lot) 
+      ? await getCertInfo(lot, "diamonds")
+      : { certNumber: lot, lab: "", certUrl: "", source: "invalid-lot" };
     res.render("show", { lot, media, cert });
   } catch (error) {
     console.error("/diamonds handler error", error.message);
@@ -96,7 +99,9 @@ app.get("/jewelry/:id", async function (req, res) {
   const lot = req.params.id;
   try {
     const media = buildMediaUrls(lot);
-    const cert = await getCertInfo(lot, "jewelry");
+    const cert = isValidLotName(lot)
+      ? await getCertInfo(lot, "jewelry")
+      : { certNumber: lot, lab: "", certUrl: "", source: "invalid-lot" };
     const details = await fetchSqlDetails(lot);
 
     res.render("jewelry", { lot, media, cert, details });
@@ -142,6 +147,11 @@ function buildBlobCertUrl(lot) {
 
 function normalizeLab(lab) {
   return (lab || "").trim().toUpperCase();
+}
+
+function isValidLotName(lot) {
+  // Require at least 3 characters and only allow alphanumeric + common separators
+  return lot && lot.length >= 3 && /^[A-Za-z0-9_-]+$/.test(lot);
 }
 
 function loadMockCerts() {

@@ -16,7 +16,7 @@
 		</div>	
 		<div class = "col-md-12" align="center" id ="cert">
 			<h1 class="display-2" >Certificate</h1>
-			<% if (cert && cert.source && cert.source !== 'blob-fallback') { %>
+			<% if (cert && cert.source && cert.source !== 'blob-fallback' && cert.source !== 'invalid-lot') { %>
 				<div class="embed-responsive" style="padding-bottom: 100%;">  
 					<iframe id="myframe" src = "<%= cert.certUrl %>" onerror = "this.style.display = 'none';" >
 					</iframe>
