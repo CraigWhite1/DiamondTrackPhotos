@@ -10,14 +10,16 @@ Updated to use FastAPI + GIA for certificate retrieval with blob fallback and op
 
 ## Certificate flow
 1. Call FastAPI for cert number and lab.
-2. If lab is GIA, call the GIA endpoint first; otherwise use FastAPI data.
-3. If both fail, fall back to blob certificate URL.
+2. If lab is GIA **and** FastAPI returned a real report number, call the GIA endpoint; otherwise use the FastAPI certificate URL.
+3. If neither yields a URL, fall back to the blob certificate PDF — but only if that PDF actually exists (verified with a HEAD request, trying both `.pdf` and `.PDF`).
+4. If nothing is found, the cert is reported as unavailable.
+
+Append `?debug=1` to a diamond/jewelry URL to see which source (`gia`, `fastapi`, `blob-fallback`, `none`, ...) was used.
 
 ## Key files
 - [app.js](app.js) — FastAPI/GIA client, blob fallback, mock + SQL fallbacks.
 - [views/show.ejs](views/show.ejs) and [views/jewelry.ejs](views/jewelry.ejs) — render media and cert info from the new flow.
 - [mocks/certs.sample.json](mocks/certs.sample.json) — sample mock data for offline dev.
-- [data.json](data.json) — legacy sample data, currently unused.
 
 ## Environment variables
 See `.env.example` for the full list. Key ones to set in Azure App Service:

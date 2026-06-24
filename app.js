@@ -14,6 +14,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Basic security headers (no extra dependency required).
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
+
 const config = {
   port: getPort(),
   fastApi: {
@@ -37,6 +45,7 @@ const config = {
       process.env.BLOB_BASE_URL || "https://gemelody.blob.core.windows.net",
     mediaContainer: process.env.BLOB_MEDIA_CONTAINER || "img",
     certContainer: process.env.BLOB_CERT_CONTAINER || "certslotname",
+    timeoutMs: parseInt(process.env.BLOB_TIMEOUT_MS || "5000", 10),
   },
   mocks: {
     enabled: process.env.USE_MOCKS === "true",
@@ -80,35 +89,46 @@ app.get("/", function (req, res) {
   res.render("landing");
 });
 
+// Lightweight health check for Azure App Service monitoring.
+app.get("/health", function (req, res) {
+  res.json({ status: "ok", uptime: process.uptime() });
+});
+
 app.get("/diamonds/:id", async function (req, res) {
   const lot = req.params.id;
+  const debug = req.query.debug === "1";
   try {
     const media = buildMediaUrls(lot);
-    // Only fetch cert if lot name looks valid (min 3 chars, alphanumeric + hyphens/underscores)
-    const cert = isValidLotName(lot) 
-      ? await getCertInfo(lot, "diamonds")
-      : { certNumber: lot, lab: "", certUrl: "", source: "invalid-lot" };
-    res.render("show", { lot, media, cert });
+    const cert = isValidLotName(lot)
+      ? await getCertInfo(lot, "diamonds", [])
+      : invalidLotCert(lot);
+    res.render("show", { lot, media, cert, debug });
   } catch (error) {
     console.error("/diamonds handler error", error.message);
-    res.render("error", { words: { LotName: "error" } });
+    res.status(500).render("error", { words: { LotName: "error" } });
   }
 });
 
 app.get("/jewelry/:id", async function (req, res) {
   const lot = req.params.id;
+  const debug = req.query.debug === "1";
   try {
     const media = buildMediaUrls(lot);
     const cert = isValidLotName(lot)
-      ? await getCertInfo(lot, "jewelry")
-      : { certNumber: lot, lab: "", certUrl: "", source: "invalid-lot" };
+      ? await getCertInfo(lot, "jewelry", [])
+      : invalidLotCert(lot);
     const details = await fetchSqlDetails(lot);
 
-    res.render("jewelry", { lot, media, cert, details });
+    res.render("jewelry", { lot, media, cert, details, debug });
   } catch (error) {
     console.error("/jewelry handler error", error.message);
-    res.render("error", { words: { LotName: "error" } });
+    res.status(500).render("error", { words: { LotName: "error" } });
   }
+});
+
+// Catch-all 404 for unmatched routes.
+app.use(function (req, res) {
+  res.status(404).render("error", { words: { LotName: "not found" } });
 });
 
 // Generic error handler to ensure stack traces hit the logs.
@@ -139,19 +159,56 @@ function buildMediaUrls(lot) {
   };
 }
 
-function buildBlobCertUrl(lot) {
+function blobCertCandidates(lot) {
   const base = config.blob.baseUrl.replace(/\/$/, "");
   const container = config.blob.certContainer.replace(/\/$/, "");
-  return `${base}/${container}/${lot}.PDF`;
+  // Blob storage is case-sensitive; try both common extensions.
+  return [
+    `${base}/${container}/${lot}.pdf`,
+    `${base}/${container}/${lot}.PDF`,
+  ];
+}
+
+// Returns the first blob cert URL that actually exists, or null.
+async function resolveBlobCert(lot) {
+  for (const url of blobCertCandidates(lot)) {
+    try {
+      const resp = await axios.head(url, { timeout: config.blob.timeoutMs });
+      if (resp.status >= 200 && resp.status < 300) return url;
+    } catch (error) {
+      // 404 / network error: try the next candidate.
+    }
+  }
+  return null;
 }
 
 function normalizeLab(lab) {
   return (lab || "").trim().toUpperCase();
 }
 
+function isHttpUrl(value) {
+  return typeof value === "string" && /^https?:\/\//i.test(value);
+}
+
+function invalidLotCert(lot) {
+  return {
+    certNumber: lot,
+    lab: "",
+    certUrl: "",
+    source: "invalid-lot",
+    available: false,
+    diagnostics: ["lot name failed validation (need 3-64 chars, A-Z a-z 0-9 _ -)"],
+  };
+}
+
 function isValidLotName(lot) {
-  // Require at least 3 characters and only allow alphanumeric + common separators
-  return lot && lot.length >= 3 && /^[A-Za-z0-9_-]+$/.test(lot);
+  // Require 3-64 chars and only allow alphanumeric + common separators.
+  return (
+    typeof lot === "string" &&
+    lot.length >= 3 &&
+    lot.length <= 64 &&
+    /^[A-Za-z0-9_-]+$/.test(lot)
+  );
 }
 
 function loadMockCerts() {
@@ -182,8 +239,11 @@ function getGiaHeaders() {
   return headers;
 }
 
-async function fetchFromFastApi(lot, kind) {
-  if (!config.fastApi.baseUrl) return null;
+async function fetchFromFastApi(lot, kind, diag) {
+  if (!config.fastApi.baseUrl) {
+    if (diag) diag.push("fastapi: skipped (FASTAPI_BASE_URL not set)");
+    return null;
+  }
   const base = config.fastApi.baseUrl.replace(/\/$/, "");
   const pathPart =
     kind === "jewelry"
@@ -207,15 +267,29 @@ async function fetchFromFastApi(lot, kind) {
       headers: getFastApiHeaders(),
       timeout: config.fastApi.timeoutMs,
     });
+    if (diag) {
+      const data = response.data;
+      const keys = data && typeof data === "object" ? Object.keys(data).join(",") : typeof data;
+      const count = data && Array.isArray(data.results) ? data.results.length : "no 'results' array";
+      diag.push(`fastapi: POST ${url} -> ${response.status}; top-level keys=[${keys}]; results=${count}`);
+    }
     return response.data;
   } catch (error) {
+    const status = error.response ? error.response.status : "no-response";
+    if (diag) diag.push(`fastapi: POST ${url} FAILED -> ${status} (${error.message})`);
     console.warn(`FastAPI fetch failed for ${kind}`, error.message);
     return null;
   }
 }
 
-async function fetchFromGia(certNumber) {
-  if (!config.gia.baseUrl || !certNumber) return null;
+async function fetchFromGia(certNumber, diag) {
+  if (!config.gia.baseUrl || !certNumber) {
+    if (diag) diag.push("gia: skipped (no base URL or cert number)");
+    return null;
+  }
+  if (diag && !config.gia.authValue) {
+    diag.push("gia: WARNING no auth value set (GIA_API_KEY/GIA_AUTH_VALUE empty) -> expect 401");
+  }
   const url = config.gia.baseUrl.replace(/\/$/, "");
   const payload = {
     query: `\n  query GetReportLink($reportNumber: String!) {\n    getReport(report_number: $reportNumber) {\n      links {\n        pdf\n      }\n    }\n  }\n`,
@@ -236,63 +310,107 @@ async function fetchFromGia(certNumber) {
       response.data.data.getReport.links
         ? response.data.data.getReport.links.pdf
         : null;
+    if (diag) {
+      const gqlErrors =
+        response.data && Array.isArray(response.data.errors)
+          ? response.data.errors.map((e) => e.message).join(" | ")
+          : "";
+      diag.push(
+        `gia: POST ${url} report=${certNumber} -> ${response.status}; pdf=${pdfUrl ? "yes" : "null"}${gqlErrors ? `; errors=[${gqlErrors}]` : ""}`
+      );
+    }
     if (!pdfUrl) return null;
     return { certNumber, certUrl: pdfUrl };
   } catch (error) {
+    const status = error.response ? error.response.status : "no-response";
+    if (diag) diag.push(`gia: POST ${url} report=${certNumber} FAILED -> ${status} (${error.message})`);
     console.warn("GIA fetch failed", error.message);
     return null;
   }
 }
 
-async function getCertInfo(lot, kind) {
+async function getCertInfo(lot, kind, diag) {
+  diag = diag || [];
   if (config.mocks.enabled && mockCerts.length) {
     const mockMatch = mockCerts.find(
       (item) => item.lotName && item.lotName.toUpperCase() === lot.toUpperCase()
     );
     if (mockMatch) {
+      const certUrl = mockMatch.certUrl || "";
+      diag.push(`mock: matched ${mockMatch.lotName}`);
       return {
         certNumber: mockMatch.certNumber || lot,
         lab: mockMatch.lab || "MOCK",
-        certUrl: mockMatch.certUrl || buildBlobCertUrl(lot),
+        certUrl,
         source: "mock",
+        available: isHttpUrl(certUrl),
+        diagnostics: diag,
       };
     }
   }
 
-  const fastApiEnvelope = await fetchFromFastApi(lot, kind);
+  const fastApiEnvelope = await fetchFromFastApi(lot, kind, diag);
   const first = fastApiEnvelope && Array.isArray(fastApiEnvelope.results)
     ? fastApiEnvelope.results[0]
     : null;
   const fastApiLab = normalizeLab(first ? first.Lab : "");
   const fastApiCertNumber = first ? first.CertificateNo : "";
   const fastApiCertUrl = first && first.CertificateUrl ? first.CertificateUrl : "";
+  diag.push(
+    first
+      ? `fastapi: first result Lab=${JSON.stringify(first.Lab)} CertificateNo=${JSON.stringify(first.CertificateNo)} CertificateUrl=${fastApiCertUrl ? "present" : "empty"}`
+      : "fastapi: no usable result for this lot"
+  );
 
-  if (fastApiLab === "GIA") {
-    const giaData = await fetchFromGia(fastApiCertNumber || lot);
-    if (giaData) {
+  // GIA requires a real numeric report number; never send the lot name as a guess.
+  if (fastApiLab === "GIA" && fastApiCertNumber) {
+    const giaData = await fetchFromGia(fastApiCertNumber, diag);
+    if (giaData && isHttpUrl(giaData.certUrl)) {
       return {
-        certNumber: giaData.certNumber || fastApiCertNumber || lot,
+        certNumber: giaData.certNumber || fastApiCertNumber,
         lab: "GIA",
-        certUrl: giaData.certUrl || fastApiCertUrl || buildBlobCertUrl(lot),
+        certUrl: giaData.certUrl,
         source: "gia",
+        available: true,
+        diagnostics: diag,
       };
     }
+  } else if (fastApiLab === "GIA" && !fastApiCertNumber) {
+    diag.push("gia: skipped (lab is GIA but FastAPI returned no CertificateNo)");
   }
 
-  if (first) {
+  if (isHttpUrl(fastApiCertUrl)) {
     return {
       certNumber: fastApiCertNumber || lot,
-      lab: fastApiLab || first.Lab || "",
-      certUrl: fastApiCertUrl || buildBlobCertUrl(lot),
+      lab: fastApiLab || (first && first.Lab) || "",
+      certUrl: fastApiCertUrl,
       source: "fastapi",
+      available: true,
+      diagnostics: diag,
+    };
+  }
+
+  // Blob fallback: only advertise a cert if the PDF actually exists.
+  const blobUrl = await resolveBlobCert(lot);
+  diag.push(blobUrl ? `blob: found ${blobUrl}` : "blob: no PDF found (.pdf/.PDF both 404)");
+  if (blobUrl) {
+    return {
+      certNumber: fastApiCertNumber || lot,
+      lab: fastApiLab || (first && first.Lab) || "",
+      certUrl: blobUrl,
+      source: "blob-fallback",
+      available: true,
+      diagnostics: diag,
     };
   }
 
   return {
-    certNumber: lot,
-    lab: "",
-    certUrl: buildBlobCertUrl(lot),
-    source: "blob-fallback",
+    certNumber: fastApiCertNumber || lot,
+    lab: fastApiLab || "",
+    certUrl: "",
+    source: "none",
+    available: false,
+    diagnostics: diag,
   };
 }
 

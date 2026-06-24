@@ -17,14 +17,24 @@
 		
 		<div class = "col-md-12" align="center">
 			<h1 class="display-2">Certificate</h1>
-			<% if (cert && cert.source && cert.source !== 'blob-fallback' && cert.source !== 'invalid-lot') { %>
-				<div class="embed-responsive" style="padding-bottom: 100%;">
-					<iframe src="<%= cert.certUrl %>" onerror="this.style.display='none'"></iframe>
+			<% if (cert && cert.available) { %>
+				<div class="embed-responsive embed-responsive-16by9" style="padding-bottom: 130%; height: 0;">
+					<iframe class="embed-responsive-item" src="<%= cert.certUrl %>" onerror="this.style.display='none'"></iframe>
 				</div>
 				<p>Cert #: <%= cert.certNumber %></p>
 				<p>Lab: <%= cert.lab %></p>
 			<% } else { %>
 				<p>Certificate is unavailable for this item.</p>
+			<% } %>
+			<% if (typeof debug !== 'undefined' && debug && cert) { %>
+				<pre style="text-align:left">source: <%= cert.source %>
+certNumber: <%= cert.certNumber %>
+lab: <%= cert.lab %>
+certUrl: <%= cert.certUrl %>
+available: <%= cert.available %>
+--- trail ---
+<% (cert.diagnostics || []).forEach(function (d) { %><%= d %>
+<% }); %></pre>
 			<% } %>
 		</div>
 
