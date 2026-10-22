@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const express = require("express");
 const axios = require("axios");
 const sql = require("mssql");
@@ -61,7 +62,17 @@ const config = {
     password: process.env.SQL_PASSWORD,
     port: parseInt(process.env.SQL_PORT || "1433", 10),
   },
+  // Debug output is shown only for ?debug=<DEBUG_KEY>. Unset means debug is off.
+  debugKey: process.env.DEBUG_KEY || "",
 };
+
+function isDebugRequest(req) {
+  const given = req.query.debug;
+  if (!config.debugKey || typeof given !== "string") return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(config.debugKey);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 function getPort() {
   // iisnode sets PORT to a named pipe (e.g., \\.\pipe\xxx); use it directly.
@@ -96,7 +107,7 @@ app.get("/health", function (req, res) {
 
 app.get("/diamonds/:id", async function (req, res) {
   const lot = req.params.id;
-  const debug = req.query.debug === "1";
+  const debug = isDebugRequest(req);
   try {
     const media = buildMediaUrls(lot);
     const cert = isValidLotName(lot)
@@ -111,7 +122,7 @@ app.get("/diamonds/:id", async function (req, res) {
 
 app.get("/jewelry/:id", async function (req, res) {
   const lot = req.params.id;
-  const debug = req.query.debug === "1";
+  const debug = isDebugRequest(req);
   try {
     const media = buildMediaUrls(lot);
     const cert = isValidLotName(lot)

@@ -14,7 +14,7 @@ Updated to use FastAPI + GIA for certificate retrieval with blob fallback and op
 3. If neither yields a URL, fall back to the blob certificate PDF — but only if that PDF actually exists (verified with a HEAD request, trying both `.pdf` and `.PDF`).
 4. If nothing is found, the cert is reported as unavailable.
 
-Append `?debug=1` to a diamond/jewelry URL to see which source (`gia`, `fastapi`, `blob-fallback`, `none`, ...) was used.
+To see which source (`gia`, `fastapi`, `blob-fallback`, `none`, ...) was used, set the `DEBUG_KEY` app setting to a long random value and append `?debug=<DEBUG_KEY>` to a diamond/jewelry URL. If `DEBUG_KEY` is not set, debug output is off.
 
 ## Key files
 - [app.js](app.js) — FastAPI/GIA client, blob fallback, mock + SQL fallbacks.
@@ -27,3 +27,4 @@ See `.env.example` for the full list. Key ones to set in Azure App Service:
 - `BLOB_*` containers for media/cert fallback
 - `USE_MOCKS` false in production
 - `USE_SQL_FALLBACK` false unless intentionally keeping legacy SQL
+- `DEBUG_KEY` (optional) secret that unlocks `?debug=` output; leave unset to disable debug
