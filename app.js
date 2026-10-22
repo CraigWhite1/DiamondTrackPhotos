@@ -5,7 +5,6 @@ const fs = require("fs");
 const crypto = require("crypto");
 const express = require("express");
 const axios = require("axios");
-const sql = require("mssql");
 
 const app = express();
 
@@ -53,14 +52,6 @@ const config = {
     path:
       process.env.MOCK_CERT_PATH ||
       path.join(__dirname, "mocks", "certs.sample.json"),
-  },
-  sql: {
-    enabled: process.env.USE_SQL_FALLBACK === "true",
-    server: process.env.SQL_SERVER,
-    database: process.env.SQL_DATABASE,
-    user: process.env.SQL_USER,
-    password: process.env.SQL_PASSWORD,
-    port: parseInt(process.env.SQL_PORT || "1433", 10),
   },
   // Debug output is shown only for ?debug=<DEBUG_KEY>. Unset means debug is off.
   debugKey: process.env.DEBUG_KEY || "",
@@ -128,9 +119,7 @@ app.get("/jewelry/:id", async function (req, res) {
     const cert = isValidLotName(lot)
       ? await getCertInfo(lot, "jewelry", [])
       : invalidLotCert(lot);
-    const details = await fetchSqlDetails(lot);
-
-    res.render("jewelry", { lot, media, cert, details, debug });
+    res.render("jewelry", { lot, media, cert, debug });
   } catch (error) {
     console.error("/jewelry handler error", error.message);
     res.status(500).render("error", { words: { LotName: "error" } });
@@ -423,36 +412,4 @@ async function getCertInfo(lot, kind, diag) {
     available: false,
     diagnostics: diag,
   };
-}
-
-async function fetchSqlDetails(lot) {
-  if (!config.sql.enabled) return [];
-  const dbConfig = {
-    server: config.sql.server,
-    database: config.sql.database,
-    user: config.sql.user,
-    password: config.sql.password,
-    port: config.sql.port,
-    options: {
-      encrypt: true,
-      enableArithAbort: true,
-    },
-  };
-
-  if (!dbConfig.server || !dbConfig.database || !dbConfig.user || !dbConfig.password) {
-    console.warn("SQL fallback skipped: missing credentials");
-    return [];
-  }
-
-  try {
-    const pool = await sql.connect(dbConfig);
-    const request = pool.request();
-    request.input("lot", sql.VarChar, lot);
-    const result = await request.query("SELECT * FROM Certs WHERE LotName = @lot;");
-    await pool.close();
-    return result.recordset || [];
-  } catch (error) {
-    console.warn("SQL fallback failed", error.message);
-    return [];
-  }
 }

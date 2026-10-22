@@ -3,7 +3,7 @@
 Updated to use FastAPI + GIA for certificate retrieval with blob fallback and optional local mocks.
 
 ## Setup
-- Copy `.env.example` to `.env` and fill FastAPI/GIA auth values. Leave `USE_SQL_FALLBACK=false` unless you intentionally want the old SQL flow.
+- Copy `.env.example` to `.env` and fill FastAPI/GIA auth values.
 - For local/offline tests, keep `USE_MOCKS=true`; edit `mocks/certs.sample.json` as needed.
 - Install dependencies: `npm install`
 - Run: `npm start`
@@ -17,7 +17,7 @@ Updated to use FastAPI + GIA for certificate retrieval with blob fallback and op
 To see which source (`gia`, `fastapi`, `blob-fallback`, `none`, ...) was used, set the `DEBUG_KEY` app setting to a long random value and append `?debug=<DEBUG_KEY>` to a diamond/jewelry URL. If `DEBUG_KEY` is not set, debug output is off.
 
 ## Key files
-- [app.js](app.js) — FastAPI/GIA client, blob fallback, mock + SQL fallbacks.
+- [app.js](app.js) — FastAPI/GIA client, blob fallback, mock data.
 - [views/show.ejs](views/show.ejs) and [views/jewelry.ejs](views/jewelry.ejs) — render media and cert info from the new flow.
 - [mocks/certs.sample.json](mocks/certs.sample.json) — sample mock data for offline dev.
 
@@ -26,5 +26,4 @@ See `.env.example` for the full list. Key ones to set in Azure App Service:
  - `GIA_BASE_URL` (use `https://api.reportresults.gia.edu/` for direct GraphQL), `GIA_API_KEY`, `GIA_AUTH_HEADER=Authorization`
 - `BLOB_*` containers for media/cert fallback
 - `USE_MOCKS` false in production
-- `USE_SQL_FALLBACK` false unless intentionally keeping legacy SQL
 - `DEBUG_KEY` (optional) secret that unlocks `?debug=` output; leave unset to disable debug
